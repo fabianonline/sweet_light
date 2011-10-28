@@ -24,14 +24,12 @@ const int SETS[][SET_CHANNELS_COUNT] = {
   {128,   0,  60}
 };
 
-struct Channel {
-  int start;
-  int current;
-  int target;
-  int time_remaining;
-};
+#define _start 0
+#define _current 1
+#define _target 2
+#define _time_remaining 4
 
-Channel channels[CHANNELS];
+int channels[CHANNELS][4];
 
 int last_pressed_button = 255; // non-existing button
 int pressed_for = 0;
@@ -77,17 +75,16 @@ void setup() {
   
   
   // set all channels to black
-  for (int i=0; i<CHANNELS; i++) channels[i].current = 0;
+  for (int i=0; i<CHANNELS; i++) channels[i][_current] = 0;
   
   // load first set
-  for (int i=0; i<SET_CHANNELS_COUNT; i++) channels[SET_CHANNELS[i]].current = SETS[0][i];
+  for (int i=0; i<SET_CHANNELS_COUNT; i++) channels[SET_CHANNELS[i]][_current] = SETS[0][i];
   
   // target == start == current
   for (int i=0; i<CHANNELS; i++) {
-    Channel channel = channels[i];
-    channel.target = channel.current;
-    channel.start = channel.current;
-    channel.time_remaining = 0;
+    channels[i][_target] = channels[i][_current];
+    channels[i][_start] = channels[i][_current];
+    channels[i][_time_remaining] = 0;
   }
 }
 
@@ -116,12 +113,13 @@ void loop() {
 
 void fade() {
   for (int i=0; i<CHANNELS; i++) {
-    Channel channel = channels[i];
-    if (channel.time_remaining == 0) {
-      channel.current = channel.target;
+    if (channels[i][_time_remaining] == 0) {
+      if (channels[i][_current] != channels[i][_target]) {
+        channels[i][_current] = channels[i][_target];
+      }
     } else {
-      channel.current = channel.start + ((channel.target - channel.start) / FADE_TIME * (FADE_TIME-channel.time_remaining));
-      channel.time_remaining -= 1;
+      channels[i][_current] = channels[i][_start] + ((channels[i][_target] - channels[i][_start]) / FADE_TIME * (FADE_TIME-channels[i][_time_remaining]));
+      channels[i][_time_remaining] = channels[i][_time_remaining] - 1;
     }
   }
 }
@@ -132,7 +130,7 @@ void send_dmx() {
   // send the start byte
   shiftDmxOut(DMX_PIN, 0);
   for(int i=0; i<CHANNELS; i++) {
-    shiftDmxOut(DMX_PIN, channels[i].current);
+    shiftDmxOut(DMX_PIN, channels[i][_current]);
   }
 }
 
@@ -142,16 +140,15 @@ void clearSetLEDs() {
 
 void stopFades() {
   for (int i=0; i<CHANNELS; i++) {
-    Channel channel = channels[i];
-    channel.target == channel.current;
-    channel.time_remaining = 0;
+    channels[i][_target] == channels[i][_current];
+    channels[i][_time_remaining] = 0;
   }
 }
 
 void setAllChannelsImmediately(int value) {
   for (int i=0; i<CHANNELS; i++) {
-    channels[i].target == value;
-    channels[i].time_remaining = 0;
+    channels[i][_target] == value;
+    channels[i][_time_remaining] = 0;
   }
 }
 
@@ -173,23 +170,22 @@ int checkButtons() {
   return 255;
 }
 
-void toggleChannel(int chan) {
-  Channel channel = channels[chan];
-  int target = (channel.current>127 ? 0 : 255);
-  int button = (chan==0 ? 12 : 13);
+void toggleChannel(int i) {
+  int target = (channels[i][_current]>127 ? 0 : 255);
+  int button = (i==0 ? 12 : 13);
   digitalWrite(button, target==255?HIGH:LOW);
-  channel.start = channel.current;
-  channel.target = target;
-  channel.time_remaining = FADE_TIME;
+  channels[i][_start] = channels[i][_current];
+  channels[i][_target] = target;
+  channels[i][_time_remaining] = FADE_TIME;
 }
 
 void fadeToSet(int set_id) {
   // load set
-  for (int i=0; i<SET_CHANNELS_COUNT; i++) {
-    Channel channel = channels[SET_CHANNELS[i]];
-    channel.start = channel.current;
-    channel.target = SETS[set_id][i];
-    channel.time_remaining = FADE_TIME;
+  for (int j=0; j<SET_CHANNELS_COUNT; j++) {
+    int i = SET_CHANNELS[j];
+    channels[i][_start] = channels[i][_current];
+    channels[i][_target] = SETS[set_id][i];
+    channels[i][_time_remaining] = FADE_TIME;
   }
   clearSetLEDs();
   // not quite sure if this works...
