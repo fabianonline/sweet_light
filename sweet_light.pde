@@ -33,6 +33,7 @@ int channels[CHANNELS][4];
 
 int last_pressed_button = 255; // non-existing button
 int pressed_for = 0;
+boolean channel_changed;
 
 
 
@@ -106,7 +107,7 @@ void loop() {
   }
   
   fade();
-  send_dmx();
+  if (channel_changed) send_dmx();
   
   delay(1);
 }
@@ -115,9 +116,11 @@ void fade() {
   for (int i=0; i<CHANNELS; i++) {
     if (channels[i][_time_remaining] == 0) {
       if (channels[i][_current] != channels[i][_target]) {
+        channel_changed=true;
         channels[i][_current] = channels[i][_target];
       }
     } else {
+      channel_changed = true;
       channels[i][_current] = channels[i][_start] + ((channels[i][_target] - channels[i][_start]) / FADE_TIME * (FADE_TIME-channels[i][_time_remaining]));
       channels[i][_time_remaining] = channels[i][_time_remaining] - 1;
     }
@@ -132,6 +135,7 @@ void send_dmx() {
   for(int i=0; i<CHANNELS; i++) {
     shiftDmxOut(DMX_PIN, channels[i][_current]);
   }
+  channel_changed = false;
 }
 
 void clearSetLEDs() {
