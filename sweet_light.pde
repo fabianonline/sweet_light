@@ -20,10 +20,14 @@ const int SETS[][SET_CHANNELS_COUNT] = {
   {128,   0,  60}
 };
 
-int channel_values_start[CHANNELS];
-int channel_values_current[CHANNELS];
-int channel_values_target[CHANNELS];
-int channel_time_remaining[CHANNELS];
+struct Channel {
+  int start;
+  int current;
+  int target;
+  int time_remaining;
+};
+
+Channel channels[CHANNELS];
 
 int last_pressed_button = 255; // non-existing button
 int pressed_for = 0;
@@ -55,16 +59,17 @@ void setup() {
   digitalWrite(9, HIGH);
   
   // set all channels to black
-  for (int i=0; i<CHANNELS; i++) channel_values_current[i] = 0;
+  for (int i=0; i<CHANNELS; i++) channels[i].current = 0;
   
   // load first set
-  for (int i=0; i<SET_CHANNELS_COUNT; i++) channel_values_current[SET_CHANNELS[i]] = SETS[0][i];
+  for (int i=0; i<SET_CHANNELS_COUNT; i++) channels[SET_CHANNELS[i]].current = SETS[0][i];
   
   // target == start == current
   for (int i=0; i<CHANNELS; i++) {
-    channel_values_target[i] = channel_values_current[i];
-    channel_values_start[i] = channel_values_current[i];
-    channel_time_remaining[i] = 0;
+    Channel channel = channels[i];
+    channel.target = channel.current;
+    channel.start = channel.current;
+    channel.time_remaining = 0;
   }
 }
 
@@ -82,26 +87,28 @@ void loop() {
 
 void fade() {
   for (int i=0; i<CHANNELS; i++) {
-    if (channel_time_remaining[i] == 0) {
-      channel_values_current[i] = channel_values_target[i];
+    Channel channel = channels[i];
+    if (channel.time_remaining == 0) {
+      channel.current = channel.target;
     } else {
-      channel_values_current[i] = channel_values_start[i] + ((channel_values_target[i] - channel_values_start[i]) / FADE_TIME * (FADE_TIME-channel_time_remaining[i]));
-      channel_time_remaining[i] -= 1;
+      channel.current = channel.start + ((channel.target - channel.start) / FADE_TIME * (FADE_TIME-channel.time_remaining));
+      channel.time_remaining -= 1;
     }
   }
 }
 
 void stopFades() {
   for (int i=0; i<CHANNELS; i++) {
-    channel_values_target[i] == channel_values_current[i];
-    channel_time_remaining[i] = 0;
+    Channel channel = channels[i];
+    channel.target == channel.current;
+    channel.time_remaining = 0;
   }
 }
 
 void setAllChannelsImmediately(int value) {
   for (int i=0; i<CHANNELS; i++) {
-    channel_values_target[i] == value;
-    channel_time_remaining[i] = 0;
+    channels[i].target == value;
+    channels[i].time_remaining = 0;
   }
 }
 
@@ -123,20 +130,21 @@ int checkButtons() {
   return 255;
 }
 
-void toggleChannel(int channel) {
-  int target = (channel_values_current[channel]>127 ? 0 : 255);
-  channel_values_start[channel] = channel_values_current[channel];
-  channel_values_target[channel] = target;
-  channel_time_remaining[channel] = FADE_TIME;
+void toggleChannel(int chan) {
+  Channel channel = channels[chan];
+  int target = (channel.current>127 ? 0 : 255);
+  channel.start = channel.current;
+  channel.target = target;
+  channel.time_remaining = FADE_TIME;
 }
 
 void fadeToSet(int set_id) {
   // load set
   for (int i=0; i<SET_CHANNELS_COUNT; i++) {
-    int channel = SET_CHANNELS[i];
-    channel_values_start[channel] = channel_values_current[channel];
-    channel_values_target[channel] = SETS[set_id][i];
-    channel_time_remaining[channel] = FADE_TIME;
+    Channel channel = channels[SET_CHANNELS[i]];
+    channel.start = channel.current;
+    channel.target = SETS[set_id][i];
+    channel.time_remaining = FADE_TIME;
   }
 }
 
