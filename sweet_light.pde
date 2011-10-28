@@ -6,6 +6,7 @@
 #define SET_CHANNELS_COUNT 3
 // How long should a fade take in ms
 #define FADE_TIME 10000
+#define DEBOUNCE_TICKS 10
 
 
 const int SET_CHANNELS[] = {2, 3, 4};
@@ -19,9 +20,13 @@ const int SETS[][SET_CHANNELS_COUNT] = {
   {128,   0,  60}
 };
 
+int channel_values_start[CHANNELS];
 int channel_values_current[CHANNELS];
 int channel_values_target[CHANNELS];
-int fade_time_remaining;
+int channel_time_remaining[CHANNELS];
+
+int last_pressed_button = 255; // non-existing button
+int pressed_for = 0;
 
 
 
@@ -55,26 +60,84 @@ void setup() {
   // load first set
   for (int i=0; i<SET_CHANNELS_COUNT; i++) channel_values_current[SET_CHANNELS[i]] = SETS[0][i];
   
-  // target == current
-  for (int i=0; i<CHANNELS; i++) channel_values_target[i] = channel_values_current[i];
-  
-  // no fade time remaining => don't fade
-  fade_time_remaining = 0;
+  // target == start == current
+  for (int i=0; i<CHANNELS; i++) {
+    channel_values_target[i] = channel_values_current[i];
+    channel_values_start[i] = channel_values_current[i];
+    channel_time_remaining[i] = 0;
+  }
 }
 
 void loop() {
   int button = checkButtons();
   if (button>=0 && button<SET_COUNT) fadeToSet(button);
+  else if(button==5) toggleChannel(4);
+  else if(button==6) toggleChannel(0);
+  else if(button==7) stopFades();
+  else if(button==8) setAllChannelsImmediately(255);
+  else if(button==9) setAllChannelsImmediately(0);
+  
+  fade();
+}
+
+void fade() {
+  for (int i=0; i<CHANNELS; i++) {
+    if (channel_time_remaining[i] == 0) {
+      channel_values_current[i] = channel_values_target[i];
+    } else {
+      channel_values_current[i] = channel_values_start[i] + ((channel_values_target[i] - channel_values_start[i]) / FADE_TIME * (FADE_TIME-channel_time_remaining[i]));
+      channel_time_remaining[i] -= 1;
+    }
+  }
+}
+
+void stopFades() {
+  for (int i=0; i<CHANNELS; i++) {
+    channel_values_target[i] == channel_values_current[i];
+    channel_time_remaining[i] = 0;
+  }
+}
+
+void setAllChannelsImmediately(int value) {
+  for (int i=0; i<CHANNELS; i++) {
+    channel_values_target[i] == value;
+    channel_time_remaining[i] = 0;
+  }
 }
 
 int checkButtons() {
+  int old_last_pressed_button = last_pressed_button;
+  last_pressed_button = 255;
   
+  for (int i=0; i<=9; i++) {
+    if (digitalRead(i) == HIGH) {
+      last_pressed_button = i;
+    }
+  }
+  
+  if (last_pressed_button == old_last_pressed_button) pressed_for++;
+  else pressed_for = 0;
+  
+  if (pressed_for == DEBOUNCE_TICKS) return last_pressed_button;
+  
+  return 255;
+}
+
+void toggleChannel(int channel) {
+  int target = (channel_values_current[channel]>127 ? 0 : 255);
+  channel_values_start[channel] = channel_values_current[channel];
+  channel_values_target[channel] = target;
+  channel_time_remaining[channel] = FADE_TIME;
 }
 
 void fadeToSet(int set_id) {
   // load set
-  for (int i=0; i<SET_CHANNELS_COUNT; i++) channel_values_target[SET_CHANNELS[i]] = SETS[set_id][i];
-  fade_time_remaining = FADE_TIME;
+  for (int i=0; i<SET_CHANNELS_COUNT; i++) {
+    int channel = SET_CHANNELS[i];
+    channel_values_start[channel] = channel_values_current[channel];
+    channel_values_target[channel] = SETS[set_id][i];
+    channel_time_remaining[channel] = FADE_TIME;
+  }
 }
 
 
