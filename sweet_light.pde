@@ -171,12 +171,17 @@ int checkButtons() {
     }
   }
   
-  if (last_pressed_button == old_last_pressed_button) pressed_for++;
-  else pressed_for = 0;
+  if (last_pressed_button!=255 && last_pressed_button==old_last_pressed_button) {
+    pressed_for=pressed_for+1;
+  } else {
+    pressed_for = 0;
+  }
   
-  if (pressed_for == DEBOUNCE_TICKS) return last_pressed_button;
-  
-  return 255;
+  if (pressed_for == DEBOUNCE_TICKS) {
+    return last_pressed_button;
+  } else {
+    return 255;
+  }
 }
 
 void toggleChannel(int i) {
