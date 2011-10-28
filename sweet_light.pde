@@ -62,6 +62,20 @@ void setup() {
   digitalWrite(8, HIGH);
   digitalWrite(9, HIGH);
   
+  // set pins to output and set all except for first to high
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(A0, OUTPUT);
+  pinMode(A1, OUTPUT);
+  pinMode(A2, OUTPUT);
+  pinMode(A3, OUTPUT);
+  pinMode(A4, OUTPUT);
+  digitalWrite(12, LOW);
+  digitalWrite(13, LOW);
+  clearSetLEDs();
+  digitalWrite(A0, HIGH);
+  
+  
   // set all channels to black
   for (int i=0; i<CHANNELS; i++) channels[i].current = 0;
   
@@ -83,8 +97,16 @@ void loop() {
   else if(button==5) toggleChannel(4);
   else if(button==6) toggleChannel(0);
   else if(button==7) stopFades();
-  else if(button==8) setAllChannelsImmediately(255);
-  else if(button==9) setAllChannelsImmediately(0);
+  else if(button==8) {
+    setAllChannelsImmediately(255);
+    digitalWrite(12, HIGH);
+    digitalWrite(13, HIGH);
+  } else if(button==9) {
+    setAllChannelsImmediately(0);
+    clearSetLEDs();
+    digitalWrite(12, LOW);
+    digitalWrite(13, LOW);
+  }
   
   fade();
   send_dmx();
@@ -112,6 +134,10 @@ void send_dmx() {
   for(int i=0; i<CHANNELS; i++) {
     shiftDmxOut(DMX_PIN, channels[i].current);
   }
+}
+
+void clearSetLEDs() {
+  PORTC = PORTC & B11100000;
 }
 
 void stopFades() {
@@ -150,6 +176,8 @@ int checkButtons() {
 void toggleChannel(int chan) {
   Channel channel = channels[chan];
   int target = (channel.current>127 ? 0 : 255);
+  int button = (chan==0 ? 12 : 13);
+  digitalWrite(button, target==255?HIGH:LOW);
   channel.start = channel.current;
   channel.target = target;
   channel.time_remaining = FADE_TIME;
@@ -163,6 +191,9 @@ void fadeToSet(int set_id) {
     channel.target = SETS[set_id][i];
     channel.time_remaining = FADE_TIME;
   }
+  clearSetLEDs();
+  // not quite sure if this works...
+  digitalWrite(A0 + set_id, HIGH);
 }
 
 
