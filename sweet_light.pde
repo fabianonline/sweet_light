@@ -166,7 +166,7 @@ int checkButtons() {
   last_pressed_button = 255;
   
   for (int i=0; i<=9; i++) {
-    if (digitalRead(i) == HIGH) {
+    if (digitalRead(i) == LOW) {
       last_pressed_button = i;
     }
   }
