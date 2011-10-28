@@ -39,6 +39,7 @@ boolean channel_changed;
 
 
 void setup() {
+  cli();
   // set pins to input and activate pull-up resistors
   pinMode(0, INPUT);
   pinMode(1, INPUT);
@@ -229,7 +230,7 @@ void shiftDmxOut(int pin, int theByte)
 
   // disable interrupts, otherwise the timer 0 overflow interrupt that
   // tracks milliseconds will make us delay longer than we want.
-  cli();
+  // cli();
 
   // DMX starts with a start-bit that must always be zero
   _SFR_BYTE(_SFR_IO8(portNumber)) &= ~pinMask;
@@ -273,5 +274,5 @@ void shiftDmxOut(int pin, int theByte)
   _SFR_BYTE(_SFR_IO8(portNumber)) |= pinMask;
 
   // reenable interrupts.
-  sei();
+  //sei();
 }
