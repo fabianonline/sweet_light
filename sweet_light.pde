@@ -1,3 +1,5 @@
+#include "pins_arduino.h"
+
 // How many settings do we have
 #define SET_COUNT 5
 // Number of channels to use
@@ -7,6 +9,8 @@
 // How long should a fade take in ms
 #define FADE_TIME 10000
 #define DEBOUNCE_TICKS 10
+
+#define DMX_PIN 11
 
 
 const int SET_CHANNELS[] = {2, 3, 4};
@@ -83,6 +87,9 @@ void loop() {
   else if(button==9) setAllChannelsImmediately(0);
   
   fade();
+  send_dmx();
+  
+  delay(1);
 }
 
 void fade() {
@@ -94,6 +101,16 @@ void fade() {
       channel.current = channel.start + ((channel.target - channel.start) / FADE_TIME * (FADE_TIME-channel.time_remaining));
       channel.time_remaining -= 1;
     }
+  }
+}
+
+void send_dmx() {
+  digitalWrite(DMX_PIN, LOW);
+  delayMicroseconds(100);
+  // send the start byte
+  shiftDmxOut(DMX_PIN, 0);
+  for(int i=0; i<CHANNELS; i++) {
+    shiftDmxOut(DMX_PIN, channels[i].current);
   }
 }
 
@@ -149,3 +166,81 @@ void fadeToSet(int set_id) {
 }
 
 
+
+
+
+
+/* Sends a DMX byte out on a pin.  Assumes a 16 MHz clock.
+ * Disables interrupts, which will disrupt the millis() function if used
+ * too frequently. 
+ * 
+ * Source: Peter Szakal and Gabor Papp
+ * http://iad.projects.zhdk.ch/physicalcomputing/hardware/arduino/dmx-shield-fur-arduino/
+ */
+void shiftDmxOut(int pin, int theByte)
+{
+  int port_to_output[] = {
+    NOT_A_PORT,
+    NOT_A_PORT,
+    _SFR_IO_ADDR(PORTB),
+    _SFR_IO_ADDR(PORTC),
+    _SFR_IO_ADDR(PORTD)
+    };
+
+    int portNumber = port_to_output[digitalPinToPort(pin)];
+  int pinMask = digitalPinToBitMask(pin);
+
+  // the first thing we do is to write te pin to high
+  // it will be the mark between bytes. It may be also
+  // high from before
+  _SFR_BYTE(_SFR_IO8(portNumber)) |= pinMask;
+  delayMicroseconds(10);
+
+  // disable interrupts, otherwise the timer 0 overflow interrupt that
+  // tracks milliseconds will make us delay longer than we want.
+  cli();
+
+  // DMX starts with a start-bit that must always be zero
+  _SFR_BYTE(_SFR_IO8(portNumber)) &= ~pinMask;
+
+  // we need a delay of 4us (then one bit is transfered)
+  // this seems more stable then using delayMicroseconds
+  asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+  asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+
+  asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+  asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+
+  asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+  asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+
+  for (int i = 0; i < 8; i++)
+  {
+    if (theByte & 01)
+    {
+      _SFR_BYTE(_SFR_IO8(portNumber)) |= pinMask;
+    }
+    else
+    {
+      _SFR_BYTE(_SFR_IO8(portNumber)) &= ~pinMask;
+    }
+
+    asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+    asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+
+    asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+    asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+
+    asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+    asm("nop\n nop\n nop\n nop\n nop\n nop\n nop\n nop\n");
+
+    theByte >>= 1;
+  }
+
+  // the last thing we do is to write the pin to high
+  // it will be the mark between bytes. (this break is have to be between 8 us and 1 sec)
+  _SFR_BYTE(_SFR_IO8(portNumber)) |= pinMask;
+
+  // reenable interrupts.
+  sei();
+}
