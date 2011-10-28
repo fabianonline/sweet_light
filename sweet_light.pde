@@ -92,11 +92,15 @@ void setup() {
 
 void loop() {
   int button = checkButtons();
-  if (button>=0 && button<SET_COUNT) fadeToSet(button);
-  else if(button==5) toggleChannel(4);
-  else if(button==6) toggleChannel(0);
-  else if(button==7) stopFades();
-  else if(button==8) {
+  if (button>=0 && button<SET_COUNT) {
+    fadeToSet(button);
+  } else if(button==5) {
+    toggleChannel(4);
+  } else if(button==6) {
+    toggleChannel(0);
+  } else if(button==7) {
+    stopFades();
+  } else if(button==8) {
     setAllChannelsImmediately(255);
     digitalWrite(12, HIGH);
     digitalWrite(13, HIGH);
