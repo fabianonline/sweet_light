@@ -27,7 +27,7 @@ const int SETS[][SET_CHANNELS_COUNT] = {
 #define _start 0
 #define _current 1
 #define _target 2
-#define _time_remaining 4
+#define _time_remaining 3
 
 int channels[CHANNELS][4];
 
