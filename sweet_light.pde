@@ -77,6 +77,9 @@ void setup() {
   clearSetLEDs();
   digitalWrite(A0, HIGH);
   
+  // set pin 11 (DMX pin) to output
+  pinMode(11, OUTPUT);
+  
   
   // set all channels to black
   for (int i=0; i<CHANNELS; i++) channels[i][_current] = 0;
