@@ -160,14 +160,14 @@ void clearSetLEDs() {
 
 void stopFades() {
   for (int i=0; i<CHANNELS; i++) {
-    channels[i][_target] == channels[i][_current];
+    channels[i][_target] = channels[i][_current];
     channels[i][_time_remaining] = 0;
   }
 }
 
 void setAllChannelsImmediately(int value) {
   for (int i=0; i<CHANNELS; i++) {
-    channels[i][_target] == value;
+    channels[i][_target] = value;
     channels[i][_time_remaining] = 0;
     // This should also be set by fade() - but better save than sorry.
     channel_changed = true;
