@@ -151,7 +151,11 @@ void send_dmx() {
 }
 
 void clearSetLEDs() {
-  PORTC = PORTC & B11100000;
+  digitalWrite(A0, LOW);
+  digitalWrite(A1, LOW);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+  digitalWrite(A4, LOW);
 }
 
 void stopFades() {
