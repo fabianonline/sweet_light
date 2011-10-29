@@ -215,8 +215,8 @@ void fadeToSet(int set_id) {
     channels[i][_time_remaining] = FADE_TIME;
   }
   clearSetLEDs();
-  // not quite sure if this works... TODO
-  //digitalWrite(A0 + set_id, HIGH);
+  // not quite sure if this works...
+  digitalWrite(A0 + set_id, HIGH);
 }
 
 
