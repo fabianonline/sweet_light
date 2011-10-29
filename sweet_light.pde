@@ -34,6 +34,9 @@ int channels[CHANNELS][4];
 int last_pressed_button = 255; // non-existing button
 int pressed_for = 0;
 boolean channel_changed;
+long debounce_time = 0;
+int last_returned_button = 255;
+int button = 255;
 
 
 
@@ -90,7 +93,7 @@ void setup() {
 }
 
 void loop() {
-  int button = checkButtons();
+  button = checkButtons();
   if (button>=0 && button<SET_COUNT) {
     fadeToSet(button);
   } else if(button==5) {
@@ -170,15 +173,15 @@ int checkButtons() {
     }
   }
   
-  if (last_pressed_button!=255 && last_pressed_button==old_last_pressed_button) {
-    pressed_for=pressed_for+1;
-  } else {
-    pressed_for = 0;
+  if (last_pressed_button==255 || old_last_pressed_button!=last_pressed_button) {
+    debounce_time = millis();
   }
   
-  if (pressed_for == DEBOUNCE_TICKS) {
+  if ((millis()-debounce_time)>DEBOUNCE_TICKS && last_pressed_button != last_returned_button) {
+    last_returned_button = last_pressed_button;
     return last_pressed_button;
   } else {
+    last_returned_button = 255;
     return 255;
   }
 }
