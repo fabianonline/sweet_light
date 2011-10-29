@@ -7,8 +7,8 @@
 // How many and which channels are used in the settings
 #define SET_CHANNELS_COUNT 3
 // How long should a fade take in ms
-#define FADE_TIME 10000
-#define DEBOUNCE_TICKS 10
+#define FADE_TIME 6000
+#define DEBOUNCE_TICKS 50
 
 #define DMX_PIN 11
 
