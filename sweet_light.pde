@@ -8,7 +8,6 @@
 #define SET_CHANNELS_COUNT 3
 // How long should a fade take in ms
 #define FADE_TIME 6000
-#define DEBOUNCE_TICKS 50
 
 #define DMX_PIN 11
 
@@ -30,6 +29,24 @@ const int SETS[][SET_CHANNELS_COUNT] = {
   {  0,   0,   0},
   {128,   0,  60}
 };
+
+// Button Settings
+// PinNumber, MinPressTime
+#define BUTTONS_COUNT 10
+const int BUTTONS[BUTTONS_COUNT][2] = {
+  {0, 50},
+  {1, 50},
+  {2, 50},
+  {3, 50},
+  {4, 50},
+  {5, 50},
+  {6, 50},
+  {7, 50},
+  {8, 500},
+  {9, 500}
+};
+#define _number 0
+#define _delay 1
 
 #define _start 0
 #define _current 1
@@ -248,8 +265,9 @@ int checkButtons() {
   int old_last_pressed_button = last_pressed_button;
   last_pressed_button = -1;
   
-  for (int i=0; i<=9; i++) {
-    if (digitalRead(i) == LOW) {
+  
+  for (int i=0; i<BUTTONS_COUNT; i++) {
+    if (digitalRead(BUTTONS[i][_number]) == LOW) {
       last_pressed_button = i;
     }
   }
@@ -258,7 +276,7 @@ int checkButtons() {
     debounce_time = millis();
   }
   
-  if ((millis()-debounce_time)>DEBOUNCE_TICKS && last_pressed_button != last_returned_button) {
+  if ((millis()-debounce_time)>BUTTONS[last_pressed_button][_delay] && last_pressed_button != last_returned_button) {
     last_returned_button = last_pressed_button;
     #ifdef DEBUG
       Serial.println("Button pressed: "+last_pressed_button);
