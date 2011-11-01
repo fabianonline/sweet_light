@@ -13,13 +13,10 @@
 #define DMX_PIN 11
 
 // uncomment to activate debug mode
-#define DEBUG
+//#define DEBUG
 #define DEBUG_FADES
 
-#ifdef DEBUG
-  #define DEBUG_PRINT(x) Serial.println(x)
-#else
-  #define DEBUG_PRINT(x)
+#ifndef DEBUG
   #undef DEBUG_FADES
 #endif
 
@@ -92,9 +89,8 @@ void setup() {
   
   #ifdef DEBUG
     Serial.begin(9600);
+    Serial.println("Start.");
   #endif
-  
-  DEBUG_PRINT("Start.");
   
   // set all channels to black
   for (int i=0; i<CHANNELS; i++) channels[i][_current] = 0;
