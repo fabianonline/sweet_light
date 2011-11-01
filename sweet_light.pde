@@ -23,11 +23,11 @@ const int SET_CHANNELS[] = {2, 3, 4};
 
 // Channel settings
 const int SETS[][SET_CHANNELS_COUNT] = {
-  {255, 128,  80},
-  {128,   0,  60},
-  {128, 128,  60},
+  {100, 100,  100},
+  {50,   50,  0},
+  {50, 50,  100},
   {  0,   0,   0},
-  {128,   0,  60}
+  {50,  50,  0}
 };
 
 // Button Settings
@@ -54,8 +54,16 @@ const int BUTTONS[BUTTONS_COUNT][2] = {
 #define _time_remaining 3
 #define _current_set 4
 #define _target_set 5
+#define _min 6
+#define _max 7
 
-int channels[CHANNELS][6];
+int channels[CHANNELS][8] = {
+  {0, 0, 0, 0, -1, -1, 0, 90},
+  {0, 0, 0, 0, -1, -1, 0, 90},
+  {0, 0, 0, 0, -1, -1, 0, 25},
+  {0, 0, 0, 0, -1, -1, 0, 50},
+  {0, 0, 0, 0, -1, -1, 0, 80}
+};
 
 int last_pressed_button = -1; // non-existing button
 int pressed_for = 0;
@@ -111,23 +119,10 @@ void setup() {
     Serial.println("Start.");
   #endif
   
-  // set all channels to black
-  for (int i=0; i<CHANNELS; i++) {
-    channels[i][_current] = 0;
-    channels[i][_current_set] = -1;
-  }
-  
-  // load first set
+  // load first set and skip the fade
+  fadeToSet(0);
   for (int i=0; i<SET_CHANNELS_COUNT; i++) {
-    channels[SET_CHANNELS[i]][_current] = SETS[0][i];
-    channels[SET_CHANNELS[i]][_current_set] = 0;
-  }
-  
-  // target == start == current
-  for (int i=0; i<CHANNELS; i++) {
-    channels[i][_target] = channels[i][_current];
-    channels[i][_start] = channels[i][_current];
-    channels[i][_time_remaining] = 0;
+    channels[SET_CHANNELS[i]][_time_remaining] = 0;
   }
   
   channel_changed = true;
@@ -289,11 +284,11 @@ int checkButtons() {
 }
 
 void toggleChannel(int i) {
-  int target = (channels[i][_current]>127 ? 0 : 255);
+  int target = (channels[i][_current]>(channels[i][_min]+((channels[i][_max]-channels[i][_min])/2)) ? 0 : 255);
   int button = (i==0 ? 12 : 13);
   digitalWrite(button, target==255?HIGH:LOW);
   channels[i][_start] = channels[i][_current];
-  channels[i][_target] = target;
+  channels[i][_target] = target*channels[i][_max]/100;
   channels[i][_time_remaining] = FADE_TIME;
   channels[i][_current_set] = -1;
   channels[i][_target_set] = -1;
@@ -307,7 +302,7 @@ void fadeToSet(int set_id) {
   for (int j=0; j<SET_CHANNELS_COUNT; j++) {
     int i = SET_CHANNELS[j];
     channels[i][_start] = channels[i][_current];
-    channels[i][_target] = SETS[set_id][j];
+    channels[i][_target] = channels[i][_min] + (SETS[set_id][j]*(channels[i][_max]-channels[i][_min])/100);
     channels[i][_time_remaining] = FADE_TIME;
     if(channels[i][_target_set]==set_id) {
       // skip fade for this channel
