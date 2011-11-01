@@ -8,35 +8,69 @@
 #define SET_CHANNELS_COUNT 3
 // How long should a fade take in ms
 #define FADE_TIME 6000
-#define DEBOUNCE_TICKS 50
 
 #define DMX_PIN 11
 
+// uncomment to activate debug mode
+//#define DEBUG
+#define DEBUG_FADES
+
+#ifndef DEBUG
+  #undef DEBUG_FADES
+#endif
 
 const int SET_CHANNELS[] = {2, 3, 4};
 
 // Channel settings
 const int SETS[][SET_CHANNELS_COUNT] = {
-  {255, 128,  80},
-  {128,   0,  60},
-  {128, 128,  60},
+  {100, 100,  100},
+  {50,   50,  0},
+  {50, 50,  100},
   {  0,   0,   0},
-  {128,   0,  60}
+  {50,  50,  0}
 };
+
+// Button Settings
+// PinNumber, MinPressTime
+#define BUTTONS_COUNT 10
+const int BUTTONS[BUTTONS_COUNT][2] = {
+  {0, 50},
+  {1, 50},
+  {2, 50},
+  {3, 50},
+  {4, 50},
+  {5, 50},
+  {6, 50},
+  {7, 50},
+  {8, 500},
+  {9, 500}
+};
+#define _number 0
+#define _delay 1
 
 #define _start 0
 #define _current 1
 #define _target 2
 #define _time_remaining 3
+#define _current_set 4
+#define _target_set 5
+#define _min 6
+#define _max 7
 
-int channels[CHANNELS][4];
+int channels[CHANNELS][8] = {
+  {0, 0, 0, 0, -1, -1, 0, 90},
+  {0, 0, 0, 0, -1, -1, 0, 90},
+  {0, 0, 0, 0, -1, -1, 0, 25},
+  {0, 0, 0, 0, -1, -1, 0, 50},
+  {0, 0, 0, 0, -1, -1, 0, 80}
+};
 
-int last_pressed_button = 255; // non-existing button
+int last_pressed_button = -1; // non-existing button
 int pressed_for = 0;
 boolean channel_changed;
 long debounce_time = 0;
-int last_returned_button = 255;
-int button = 255;
+int last_returned_button = -1;
+int button = -1;
 
 
 
@@ -80,21 +114,21 @@ void setup() {
   // set pin 11 (DMX pin) to output
   pinMode(11, OUTPUT);
   
+  #ifdef DEBUG
+    Serial.begin(9600);
+    Serial.println("Start.");
+  #endif
   
-  // set all channels to black
-  for (int i=0; i<CHANNELS; i++) channels[i][_current] = 0;
-  
-  // load first set
-  for (int i=0; i<SET_CHANNELS_COUNT; i++) channels[SET_CHANNELS[i]][_current] = SETS[0][i];
-  
-  // target == start == current
-  for (int i=0; i<CHANNELS; i++) {
-    channels[i][_target] = channels[i][_current];
-    channels[i][_start] = channels[i][_current];
-    channels[i][_time_remaining] = 0;
+  // load first set and skip the fade
+  fadeToSet(0);
+  for (int i=0; i<SET_CHANNELS_COUNT; i++) {
+    channels[SET_CHANNELS[i]][_time_remaining] = 0;
   }
   
   channel_changed = true;
+  #ifdef DEBUG
+    debugChannels();
+  #endif
 }
 
 void loop() {
@@ -125,6 +159,9 @@ void loop() {
 }
 
 void fade() {
+  #ifdef DEBUG_FADES
+    String values = "Fade:\t";
+  #endif
   for (int i=0; i<CHANNELS; i++) {
     if (channels[i][_time_remaining] > 0) {
       channel_changed = true;
@@ -134,9 +171,16 @@ void fade() {
       if (channels[i][_current] != channels[i][_target]) {
         channel_changed=true;
         channels[i][_current] = channels[i][_target];
+        channels[i][_current_set] = channels[i][_target_set];
       }
     }
+    #ifdef DEBUG_FADES
+      values += channels[i][_current] + "\t";
+    #endif
   }
+  #ifdef DEBUG_FADES
+    Serial.println(values);
+  #endif
 }
 
 void send_dmx() {
@@ -163,47 +207,94 @@ void stopFades() {
     channels[i][_target] = channels[i][_current];
     channels[i][_time_remaining] = 0;
   }
+  #ifdef DEBUG
+    debugChannels();
+  #endif
 }
 
 void setAllChannelsImmediately(int value) {
   for (int i=0; i<CHANNELS; i++) {
     channels[i][_target] = value;
     channels[i][_time_remaining] = 0;
+    channels[i][_target_set] = -1;
+    channels[i][_current_set] = -1;
     // This should also be set by fade() - but better save than sorry.
     channel_changed = true;
   }
+  #ifdef DEBUG
+    debugChannels();
+  #endif
 }
+
+#ifdef DEBUG
+  void debugChannels() {
+    String header = "\t\t";
+    String start = "Start:\t\t";
+    String current = "Current:\t";
+    String target = "Target:\t\t";
+    String time = "Time:\t\t";
+    String current_set = "Current Set:\t";
+    String target_set = "Target-Set:\t";
+    for (int i=0; i<CHANNELS; i++) {
+      header += i + "\t";
+      start += channels[i][_start] + "\t";
+      current += channels[i][_current] + "\t";
+      target += channels[i][_target] + "\t";
+      time += channels[i][_time_remaining] + "\t";
+      current_set += channels[i][_current_set] + "\t";
+      target_set += channels[i][_target_set] + "\t";
+    }
+    Serial.println("");
+    Serial.println(header);
+    Serial.println(start);
+    Serial.println(current);
+    Serial.println(target);
+    Serial.println(time);
+    Serial.println(current_set);
+    Serial.println(target_set);
+    Serial.println("");
+  }
+#endif
 
 int checkButtons() {
   int old_last_pressed_button = last_pressed_button;
-  last_pressed_button = 255;
+  last_pressed_button = -1;
   
-  for (int i=0; i<=9; i++) {
-    if (digitalRead(i) == LOW) {
+  
+  for (int i=0; i<BUTTONS_COUNT; i++) {
+    if (digitalRead(BUTTONS[i][_number]) == LOW) {
       last_pressed_button = i;
     }
   }
   
-  if (last_pressed_button==255 || old_last_pressed_button!=last_pressed_button) {
+  if (last_pressed_button==-1 || old_last_pressed_button!=last_pressed_button) {
     debounce_time = millis();
   }
   
-  if ((millis()-debounce_time)>DEBOUNCE_TICKS && last_pressed_button != last_returned_button) {
+  if ((millis()-debounce_time)>BUTTONS[last_pressed_button][_delay] && last_pressed_button != last_returned_button) {
     last_returned_button = last_pressed_button;
+    #ifdef DEBUG
+      Serial.println("Button pressed: "+last_pressed_button);
+    #endif
     return last_pressed_button;
   } else {
-    last_returned_button = 255;
-    return 255;
+    last_returned_button = -1;
+    return -1;
   }
 }
 
 void toggleChannel(int i) {
-  int target = (channels[i][_current]>127 ? 0 : 255);
+  int target = (channels[i][_current]>(channels[i][_min]+((channels[i][_max]-channels[i][_min])/2)) ? 0 : 255);
   int button = (i==0 ? 12 : 13);
   digitalWrite(button, target==255?HIGH:LOW);
   channels[i][_start] = channels[i][_current];
-  channels[i][_target] = target;
+  channels[i][_target] = target*channels[i][_max]/100;
   channels[i][_time_remaining] = FADE_TIME;
+  channels[i][_current_set] = -1;
+  channels[i][_target_set] = -1;
+  #ifdef DEBUG
+    debugChannels();
+  #endif
 }
 
 void fadeToSet(int set_id) {
@@ -211,12 +302,22 @@ void fadeToSet(int set_id) {
   for (int j=0; j<SET_CHANNELS_COUNT; j++) {
     int i = SET_CHANNELS[j];
     channels[i][_start] = channels[i][_current];
-    channels[i][_target] = SETS[set_id][j];
+    channels[i][_target] = channels[i][_min] + (SETS[set_id][j]*(channels[i][_max]-channels[i][_min])/100);
     channels[i][_time_remaining] = FADE_TIME;
+    if(channels[i][_target_set]==set_id) {
+      // skip fade for this channel
+      channels[i][_time_remaining] = 0;
+    }
+    channels[i][_target_set] = set_id;
+    channels[i][_current_set] = -1;
+    
   }
   clearSetLEDs();
   // not quite sure if this works...
   digitalWrite(A0 + set_id, HIGH);
+  #ifdef DEBUG
+    debugChannels();
+  #endif
 }
 
 
