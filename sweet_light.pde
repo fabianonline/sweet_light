@@ -38,12 +38,12 @@ const int SETS[][SET_CHANNELS_COUNT] = {
 
 int channels[CHANNELS][4];
 
-int last_pressed_button = 255; // non-existing button
+int last_pressed_button = -1; // non-existing button
 int pressed_for = 0;
 boolean channel_changed;
 long debounce_time = 0;
-int last_returned_button = 255;
-int button = 255;
+int last_returned_button = -1;
+int button = -1;
 
 
 
@@ -229,7 +229,7 @@ void setAllChannelsImmediately(int value) {
 
 int checkButtons() {
   int old_last_pressed_button = last_pressed_button;
-  last_pressed_button = 255;
+  last_pressed_button = -1;
   
   for (int i=0; i<=9; i++) {
     if (digitalRead(i) == LOW) {
@@ -237,7 +237,7 @@ int checkButtons() {
     }
   }
   
-  if (last_pressed_button==255 || old_last_pressed_button!=last_pressed_button) {
+  if (last_pressed_button==-1 || old_last_pressed_button!=last_pressed_button) {
     debounce_time = millis();
   }
   
@@ -248,8 +248,8 @@ int checkButtons() {
     #endif
     return last_pressed_button;
   } else {
-    last_returned_button = 255;
-    return 255;
+    last_returned_button = -1;
+    return -1;
   }
 }
 
