@@ -35,8 +35,10 @@ const int SETS[][SET_CHANNELS_COUNT] = {
 #define _current 1
 #define _target 2
 #define _time_remaining 3
+#define _current_set 4
+#define _target_set 5
 
-int channels[CHANNELS][4];
+int channels[CHANNELS][6];
 
 int last_pressed_button = -1; // non-existing button
 int pressed_for = 0;
@@ -93,10 +95,16 @@ void setup() {
   #endif
   
   // set all channels to black
-  for (int i=0; i<CHANNELS; i++) channels[i][_current] = 0;
+  for (int i=0; i<CHANNELS; i++) {
+    channels[i][_current] = 0;
+    channels[i][_current_set] = -1;
+  }
   
   // load first set
-  for (int i=0; i<SET_CHANNELS_COUNT; i++) channels[SET_CHANNELS[i]][_current] = SETS[0][i];
+  for (int i=0; i<SET_CHANNELS_COUNT; i++) {
+    channels[SET_CHANNELS[i]][_current] = SETS[0][i];
+    channels[SET_CHANNELS[i]][_current_set] = 0;
+  }
   
   // target == start == current
   for (int i=0; i<CHANNELS; i++) {
@@ -151,6 +159,7 @@ void fade() {
       if (channels[i][_current] != channels[i][_target]) {
         channel_changed=true;
         channels[i][_current] = channels[i][_target];
+        channels[i][_current_set] = channels[i][_target_set];
       }
     }
     #ifdef DEBUG_FADES
@@ -195,6 +204,8 @@ void setAllChannelsImmediately(int value) {
   for (int i=0; i<CHANNELS; i++) {
     channels[i][_target] = value;
     channels[i][_time_remaining] = 0;
+    channels[i][_target_set] = -1;
+    channels[i][_current_set] = -1;
     // This should also be set by fade() - but better save than sorry.
     channel_changed = true;
   }
@@ -210,12 +221,16 @@ void setAllChannelsImmediately(int value) {
     String current = "Current:\t";
     String target = "Target:\t\t";
     String time = "Time:\t\t";
+    String current_set = "Current Set:\t";
+    String target_set = "Target-Set:\t";
     for (int i=0; i<CHANNELS; i++) {
       header += i + "\t";
       start += channels[i][_start] + "\t";
       current += channels[i][_current] + "\t";
       target += channels[i][_target] + "\t";
       time += channels[i][_time_remaining] + "\t";
+      current_set += channels[i][_current_set] + "\t";
+      target_set += channels[i][_target_set] + "\t";
     }
     Serial.println("");
     Serial.println(header);
@@ -223,6 +238,8 @@ void setAllChannelsImmediately(int value) {
     Serial.println(current);
     Serial.println(target);
     Serial.println(time);
+    Serial.println(current_set);
+    Serial.println(target_set);
     Serial.println("");
   }
 #endif
@@ -260,6 +277,8 @@ void toggleChannel(int i) {
   channels[i][_start] = channels[i][_current];
   channels[i][_target] = target;
   channels[i][_time_remaining] = FADE_TIME;
+  channels[i][_current_set] = -1;
+  channels[i][_target_set] = -1;
   #ifdef DEBUG
     debugChannels();
   #endif
@@ -272,6 +291,13 @@ void fadeToSet(int set_id) {
     channels[i][_start] = channels[i][_current];
     channels[i][_target] = SETS[set_id][j];
     channels[i][_time_remaining] = FADE_TIME;
+    if(channels[i][_target_set]==set_id) {
+      // skip fade for this channel
+      channels[i][_time_remaining] = 0;
+    }
+    channels[i][_target_set] = set_id;
+    channels[i][_current_set] = -1;
+    
   }
   clearSetLEDs();
   // not quite sure if this works...
