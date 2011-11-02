@@ -22,7 +22,8 @@
 #ifdef DEBUG_FADES
   #define FADE_TIME 50
 #endif
-const int SET_CHANNELS[] = {2, 3, 4};
+
+const int SET_CHANNELS[] = {1, 2, 3};
 
 // Channel settings
 const int SETS[][SET_CHANNELS_COUNT] = {
