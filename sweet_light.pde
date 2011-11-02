@@ -169,8 +169,8 @@ void fade() {
   for (int i=0; i<CHANNELS; i++) {
     if (channels[i][_time_remaining] > 0) {
       channel_changed = true;
-      channels[i][_current] = channels[i][_start] + ((channels[i][_target] - channels[i][_start]) / FADE_TIME * (FADE_TIME-channels[i][_time_remaining]));
       channels[i][_time_remaining]--;
+      channels[i][_current] = channels[i][_start] + (int)((float)(channels[i][_target] - channels[i][_start]) / (float)FADE_TIME * (float)(FADE_TIME-channels[i][_time_remaining]));
     } else {
       if (channels[i][_current] != channels[i][_target]) {
         channel_changed=true;
