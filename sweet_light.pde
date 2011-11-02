@@ -19,6 +19,9 @@
   #undef DEBUG_FADES
 #endif
 
+#ifdef DEBUG_FADES
+  #define FADE_TIME 50
+#endif
 const int SET_CHANNELS[] = {2, 3, 4};
 
 // Channel settings
