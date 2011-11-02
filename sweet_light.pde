@@ -163,9 +163,6 @@ void loop() {
 }
 
 void fade() {
-  #ifdef DEBUG_FADES
-    String values = "Fade:\t";
-  #endif
   for (int i=0; i<CHANNELS; i++) {
     if (channels[i][_time_remaining] > 0) {
       channel_changed = true;
@@ -178,12 +175,17 @@ void fade() {
         channels[i][_current_set] = channels[i][_target_set];
       }
     }
-    #ifdef DEBUG_FADES
-      values += channels[i][_current] + "\t";
-    #endif
   }
+  
   #ifdef DEBUG_FADES
-    Serial.println(values);
+    if (channel_changed) {
+      Serial.print("Fade:    ");
+      for (int i=0; i<CHANNELS; i++) {
+        Serial.print(channels[i][_current]);
+        Serial.print("   ");
+      }
+      Serial.println();
+    }
   #endif
 }
 
@@ -232,31 +234,54 @@ void setAllChannelsImmediately(int value) {
 
 #ifdef DEBUG
   void debugChannels() {
-    String header = "\t\t";
-    String start = "Start:\t\t";
-    String current = "Current:\t";
-    String target = "Target:\t\t";
-    String time = "Time:\t\t";
-    String current_set = "Current Set:\t";
-    String target_set = "Target-Set:\t";
+    Serial.print("             ");
     for (int i=0; i<CHANNELS; i++) {
-      header += i + "\t";
-      start += channels[i][_start] + "\t";
-      current += channels[i][_current] + "\t";
-      target += channels[i][_target] + "\t";
-      time += channels[i][_time_remaining] + "\t";
-      current_set += channels[i][_current_set] + "\t";
-      target_set += channels[i][_target_set] + "\t";
+      Serial.print(i);
+      Serial.print("    ");
     }
-    Serial.println("");
-    Serial.println(header);
-    Serial.println(start);
-    Serial.println(current);
-    Serial.println(target);
-    Serial.println(time);
-    Serial.println(current_set);
-    Serial.println(target_set);
-    Serial.println("");
+    Serial.println();
+    
+    Serial.print("Start:       ");
+    for (int i=0; i<CHANNELS; i++) {
+      Serial.print(channels[i][_start]);
+      Serial.print("    ");
+    }
+    Serial.println();
+    
+    Serial.print("Current:     ");
+    for (int i=0; i<CHANNELS; i++) {
+      Serial.print(channels[i][_current]);
+      Serial.print("    ");
+    }
+    Serial.println();
+    
+    Serial.print("Target:     ");
+    for (int i=0; i<CHANNELS; i++) {
+      Serial.print(channels[i][_target]);
+      Serial.print("    ");
+    }
+    Serial.println();
+    
+    Serial.print("Time:       ");
+    for (int i=0; i<CHANNELS; i++) {
+      Serial.print(channels[i][_time_remaining]);
+      Serial.print("    ");
+    }
+    Serial.println();
+    
+    Serial.print("Current Set: ");
+    for (int i=0; i<CHANNELS; i++) {
+      Serial.print(channels[i][_current_set]);
+      Serial.print("    ");
+    }
+    Serial.println();
+    
+    Serial.print("Target Set:  ");
+    for (int i=0; i<CHANNELS; i++) {
+      Serial.print(channels[i][_target_set]);
+      Serial.print("    ");
+    }
+    Serial.println();
   }
 #endif
 
@@ -278,7 +303,8 @@ int checkButtons() {
   if ((millis()-debounce_time)>BUTTONS[last_pressed_button][_delay] && last_pressed_button != last_returned_button) {
     last_returned_button = last_pressed_button;
     #ifdef DEBUG
-      Serial.println("Button pressed: "+last_pressed_button);
+      Serial.print("Button pressed: ");
+      Serial.println(last_pressed_button);
     #endif
     return last_pressed_button;
   } else {
