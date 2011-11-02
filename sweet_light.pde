@@ -300,13 +300,16 @@ int checkButtons() {
     debounce_time = millis();
   }
   
-  if ((millis()-debounce_time)>BUTTONS[last_pressed_button][_delay] && last_pressed_button != last_returned_button) {
+  boolean pressed_long_enough = (millis()-debounce_time)>BUTTONS[last_pressed_button][_delay];
+  if (pressed_long_enough && last_pressed_button != last_returned_button) {
     last_returned_button = last_pressed_button;
     #ifdef DEBUG
       Serial.print("Button pressed: ");
       Serial.println(last_pressed_button);
     #endif
     return last_pressed_button;
+  } else if (pressed_long_enough) {
+    return -1;
   } else {
     last_returned_button = -1;
     return -1;
