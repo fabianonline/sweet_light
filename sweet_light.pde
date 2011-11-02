@@ -46,8 +46,8 @@ const int BUTTONS[BUTTONS_COUNT][2] = {
   {5, 50},
   {6, 50},
   {7, 50},
-  {8, 500},
-  {9, 500}
+  {8, 1000},
+  {9, 1000}
 };
 #define _number 0
 #define _delay 1
